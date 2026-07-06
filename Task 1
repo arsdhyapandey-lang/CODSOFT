@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>NovaMind  Rule-Based Chatbot</title>
+  <meta name="description" content="A beautifully designed rule-based chatbot that responds intelligently to your queries using predefined patterns and NLP techniques." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <style>
+    /* ─── CSS Reset & Variables ──────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-primary:    #080b14;
+      --bg-secondary:  #0d1120;
+      --bg-card:       rgba(255,255,255,0.04);
+      --bg-card-hover: rgba(255,255,255,0.07);
+      --glass:         rgba(255,255,255,0.06);
+      --glass-border:  rgba(255,255,255,0.10);
+      --accent-1:      #7c3aed;
+      --accent-2:      #06b6d4;
+      --accent-3:      #f59e0b;
+      --gradient-main: linear-gradient(135deg, #7c3aed 0%, #06b6d4 100%);
+      --gradient-glow: linear-gradient(135deg, rgba(124,58,237,0.3) 0%, rgba(6,182,212,0.3) 100%);
+      --text-primary:  #f0f4ff;
+      --text-secondary:#8b9abf;
+      --text-muted:    #4b5778;
+      --user-bubble:   linear-gradient(135deg, #7c3aed, #5b21b6);
+      --bot-bubble:    rgba(13,20,42,0.9);
+      --success:       #10b981;
+      --danger:        #ef4444;
+      --shadow-glow:   0 0 40px rgba(124,58,237,0.25);
+      --radius-lg:     18px;
+      --radius-md:     12px;
+      --radius-sm:     8px;
+      --transition:    all 0.25s cubic-bezier(0.4,0,0.2,1);
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg-primary);
+      color: var(--text-primary);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+    }
+    /* ─── Animated Background ────────────────────────────────── */
+    .bg-orbs {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      overflow: hidden;
+    }
+    .orb {
+      position: absolute; border-radius: 50%;
+      filter: blur(80px); opacity: 0.18; animation: float 8s ease-in-out infinite;
+    }
+    .orb-1 { width: 500px; height: 500px; background: #7c3aed; top: -150px; left: -150px; animation-delay: 0s; }
+    .orb-2 { width: 400px; height: 400px; background: #06b6d4; bottom: -100px; right: -100px; animation-delay: -3s; }
+    .orb-3 { width: 300px; height: 300px; background: #f59e0b; top: 50%; left: 50%; transform: translate(-50%,-50%); animation-delay: -6s; }
+    @keyframes float {
+      0%,100% { transform: translate(0,0) scale(1); }
+      33%      { transform: translate(30px,-20px) scale(1.05); }
+      66%      { transform: translate(-20px,30px) scale(0.95); }
+    }
+    /* ─── Main App Container ──────────────────────────────────── */
+    .app {
+      position: relative; z-index: 1;
+      width: min(780px, 96vw);
+      height: min(90vh, 820px);
+      display: flex; flex-direction: column;
+      background: rgba(8,11,20,0.85);
+      backdrop-filter: blur(24px) saturate(180%);
+      -webkit-backdrop-filter: blur(24px) saturate(180%);
+      border: 1px solid var(--glass-border);
+      border-radius: 28px;
+      box-shadow: var(--shadow-glow), 0 40px 80px rgba(0,0,0,0.6);
+      overflow: hidden;
+    }
+    /* ─── Header ─────────────────────────────────────────────── */
+    .header {
+      display: flex; align-items: center; gap: 14px;
+      padding: 20px 28px;
+      background: linear-gradient(180deg, rgba(124,58,237,0.12) 0%, transparent 100%);
+      border-bottom: 1px solid var(--glass-border);
+      flex-shrink: 0;
+    }
+    .bot-avatar {
+      width: 48px; height: 48px; border-radius: 50%;
+      background: var(--gradient-main);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 0 20px rgba(124,58,237,0.5);
+      animation: pulse-avatar 3s ease-in-out infinite;
+      position: relative; flex-shrink: 0;
+    }
+    .bot-avatar::after {
+      content: '';
+      position: absolute; inset: -3px; border-radius: 50%;
+      background: var(--gradient-main); opacity: 0.3;
+      animation: pulse-ring 3s ease-in-out infinite;
+    }
+    @keyframes pulse-avatar { 0%,100%{box-shadow:0 0 20px rgba(124,58,237,0.5);} 50%{box-shadow:0 0 35px rgba(6,182,212,0.6);} }
+    @keyframes pulse-ring   { 0%,100%{transform:scale(1);opacity:0.3;} 50%{transform:scale(1.15);opacity:0.1;} }
+    .header-info { flex: 1; }
+    .header-info h1 {
+      font-family: 'Space Grotesk', sans-serif;
+      font-size: 1.2rem; font-weight: 700; letter-spacing: -0.02em;
+      background: var(--gradient-main); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .header-info p { font-size: 0.75rem; color: var(--text-muted); margin-top: 2px; }
+    .status-badge {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.72rem; color: var(--success);
+      background: rgba(16,185,129,0.1); border: 1px solid rgba(16,185,129,0.25);
+      padding: 4px 10px; border-radius: 20px;
+    }
+    .status-dot { width: 6px; height: 6px; background: var(--success); border-radius: 50%; animation: blink 1.5s ease-in-out infinite; }
+    @keyframes blink { 0%,100%{opacity:1;} 50%{opacity:0.3;} }
+    .header-actions { display: flex; gap: 8px; }
+    .btn-icon {
+      width: 36px; height: 36px; border-radius: 10px;
+      background: var(--bg-card); border: 1px solid var(--glass-border);
+      color: var(--text-secondary); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; transition: var(--transition);
+    }
+    .btn-icon:hover { background: var(--bg-card-hover); color: var(--text-primary); border-color: var(--accent-1); }
+    /* ─── Suggestion Chips ───────────────────────────────────── */
+    .chips-row {
+      display: flex; gap: 8px; padding: 12px 24px;
+      overflow-x: auto; flex-shrink: 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+      scrollbar-width: none;
+    }
+    .chips-row::-webkit-scrollbar { display: none; }
+    .chip {
+      white-space: nowrap; padding: 6px 14px;
+      background: var(--bg-card); border: 1px solid var(--glass-border);
+      border-radius: 20px; font-size: 0.72rem; color: var(--text-secondary);
+      cursor: pointer; transition: var(--transition); flex-shrink: 0;
+    }
+    .chip:hover {
+      background: rgba(124,58,237,0.15); border-color: var(--accent-1);
+      color: var(--text-primary); transform: translateY(-1px);
+    }
+    /* ─── Messages Area ──────────────────────────────────────── */
+    .messages {
+      flex: 1; overflow-y: auto;
+      padding: 24px 28px;
+      display: flex; flex-direction: column; gap: 16px;
+      scroll-behavior: smooth;
+    }
+    .messages::-webkit-scrollbar { width: 4px; }
+    .messages::-webkit-scrollbar-track { background: transparent; }
+    .messages::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 4px; }
+    /* ─── Message Bubbles ─────────────────────────────────────── */
+    .msg-row {
+      display: flex; gap: 10px; align-items: flex-end;
+      animation: slideIn 0.35s cubic-bezier(0.34,1.56,0.64,1) forwards;
+      opacity: 0;
+    }
+    @keyframes slideIn {
+      from { opacity:0; transform: translateY(20px) scale(0.95); }
+      to   { opacity:1; transform: translateY(0) scale(1); }
+    }
+    .msg-row.user { flex-direction: row-reverse; }
+    .msg-avatar {
+      width: 32px; height: 32px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; flex-shrink: 0;
+    }
+    .bot-msg-avatar { background: var(--gradient-main); box-shadow: 0 0 12px rgba(124,58,237,0.4); }
+    .user-msg-avatar { background: linear-gradient(135deg,#f59e0b,#ef4444); box-shadow: 0 0 12px rgba(245,158,11,0.4); }
+    .bubble {
+      max-width: 72%; padding: 13px 17px;
+      border-radius: var(--radius-lg);
+      font-size: 0.875rem; line-height: 1.65;
+      position: relative; word-break: break-word;
+    }
+    .bubble.bot {
+      background: var(--bot-bubble);
+      border: 1px solid var(--glass-border);
+      border-bottom-left-radius: 4px;
+      color: var(--text-primary);
+    }
+    .bubble.user {
+      background: var(--user-bubble);
+      border-bottom-right-radius: 4px;
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(124,58,237,0.35);
+    }
+    .bubble-meta {
+      font-size: 0.65rem; color: var(--text-muted);
+      margin-top: 5px; display: flex; align-items: center; gap: 5px;
+    }
+    .msg-row.user .bubble-meta { justify-content: flex-end; }
+    /* category tag on bot bubbles */
+    .cat-tag {
+      display: inline-block; font-size: 0.6rem; padding: 2px 7px;
+      border-radius: 10px; margin-bottom: 5px; font-weight: 600;
+      letter-spacing: 0.05em; text-transform: uppercase;
+    }
+    .cat-greeting  { background:rgba(16,185,129,0.15);  color:#10b981; border:1px solid rgba(16,185,129,0.3); }
+    .cat-help      { background:rgba(124,58,237,0.15);  color:#a78bfa; border:1px solid rgba(124,58,237,0.3); }
+    .cat-time      { background:rgba(6,182,212,0.15);   color:#22d3ee; border:1px solid rgba(6,182,212,0.3); }
+    .cat-weather   { background:rgba(245,158,11,0.15);  color:#fbbf24; border:1px solid rgba(245,158,11,0.3); }
+    .cat-math      { background:rgba(239,68,68,0.15);   color:#f87171; border:1px solid rgba(239,68,68,0.3); }
+    .cat-general   { background:rgba(139,154,191,0.12); color:#8b9abf; border:1px solid rgba(139,154,191,0.25); }
+    .cat-mood      { background:rgba(236,72,153,0.12);  color:#f472b6; border:1px solid rgba(236,72,153,0.25); }
+    /* ─── Typing Indicator ───────────────────────────────────── */
+    .typing-bubble {
+      display: none; align-items: center; gap: 5px; padding: 14px 18px;
+    }
+    .typing-bubble.visible { display: flex; }
+    .dot {
+      width: 7px; height: 7px; border-radius: 50%;
+      background: var(--accent-2); opacity: 0.6;
+      animation: typingDot 1.2s ease-in-out infinite;
+    }
+    .dot:nth-child(2) { animation-delay: 0.2s; }
+    .dot:nth-child(3) { animation-delay: 0.4s; }
+    @keyframes typingDot { 0%,60%,100%{transform:translateY(0);opacity:0.6;} 30%{transform:translateY(-6px);opacity:1;} }
+    /* ─── Input Area ─────────────────────────────────────────── */
+    .input-area {
+      padding: 18px 24px;
+      border-top: 1px solid var(--glass-border);
+      background: linear-gradient(0deg, rgba(124,58,237,0.06) 0%, transparent 100%);
+      flex-shrink: 0;
+    }
+    .input-row {
+      display: flex; gap: 10px; align-items: center;
+      background: var(--bg-card);
+      border: 1px solid var(--glass-border);
+      border-radius: 16px;
+      padding: 10px 10px 10px 18px;
+      transition: var(--transition);
+    }
+    .input-row:focus-within { border-color: var(--accent-1); box-shadow: 0 0 0 3px rgba(124,58,237,0.15); }
+    #userInput {
+      flex: 1; background: transparent; border: none; outline: none;
+      color: var(--text-primary); font-size: 0.9rem; font-family: 'Inter', sans-serif;
+      resize: none; max-height: 120px; overflow-y: auto; line-height: 1.5;
+    }
+    #userInput::placeholder { color: var(--text-muted); }
+    #userInput::-webkit-scrollbar { width: 3px; }
+    #userInput::-webkit-scrollbar-thumb { background: var(--glass-border); }
+    .send-btn {
+      width: 42px; height: 42px; border-radius: 12px;
+      background: var(--gradient-main); border: none; cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; color: #fff;
+      transition: var(--transition); flex-shrink: 0;
+    }
+    .send-btn:hover { transform: scale(1.08); box-shadow: 0 0 20px rgba(124,58,237,0.5); }
+    .send-btn:active { transform: scale(0.96); }
+    .input-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      margin-top: 10px; padding: 0 4px;
+    }
+    .input-hint { font-size: 0.67rem; color: var(--text-muted); }
+    .char-count { font-size: 0.67rem; color: var(--text-muted); }
+    /* ─── Welcome Card ─────────────────────────────────────── */
+    .welcome-card {
+      background: linear-gradient(135deg, rgba(124,58,237,0.1), rgba(6,182,212,0.1));
+      border: 1px solid rgba(124,58,237,0.25);
+      border-radius: 20px; padding: 22px;
+      display: flex; flex-direction: column; gap: 12px;
+      animation: slideIn 0.4s cubic-bezier(0.34,1.56,0.64,1) forwards;
+    }
+    .welcome-card h2 {
+      font-family: 'Space Grotesk', sans-serif; font-size: 1rem; font-weight: 700;
+      background: var(--gradient-main); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+    }
+    .welcome-card p { font-size: 0.82rem; color: var(--text-secondary); line-height: 1.6; }
+    .welcome-topics { display: flex; flex-wrap: wrap; gap: 7px; }
+    .topic-chip {
+      font-size: 0.7rem; padding: 4px 10px;
+      background: rgba(255,255,255,0.05); border: 1px solid var(--glass-border);
+      border-radius: 20px; color: var(--text-secondary);
+    }
+    /* ─── Responsive ─────────────────────────────────────────── */
+    @media (max-width: 520px) {
+      .app { border-radius: 0; height: 100vh; width: 100vw; }
+      .bubble { max-width: 88%; }
+      .header { padding: 14px 16px; }
+      .messages { padding: 16px; }
+    }
+  </style>
+</head>
+<body>
+<!-- Animated Background -->
+<div class="bg-orbs" aria-hidden="true">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+</div>
+<!-- Main App -->
+<main class="app" role="main">
+  <!-- Header -->
+  <header class="header">
+    <div class="bot-avatar" aria-hidden="true">AP</div>
+    <div class="header-info">
+      <h1>AP Mind AI</h1>
+      <p>Rule-Based Intelligent Chatbot </p>
+    </div>
+    <div class="status-badge" aria-label="Bot status: Online">
+      <span class="status-dot"></span> Online
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" id="clearBtn" title="Clear chat" aria-label="Clear chat">🗑️</button>
+    </div>
+  </header>
+  <!-- Quick Suggestion Chips -->
+  <nav class="chips-row" aria-label="Quick suggestions">
+    <button class="chip" data-msg="Hello!">👋 Hello</button>
+    <button class="chip" data-msg="What time is it?">🕐 Time</button>
+    <button class="chip" data-msg="What is today's date?">📅 Date</button>
+    <button class="chip" data-msg="Tell me a joke">😂 Joke</button>
+    <button class="chip" data-msg="What can you do?">💡 Capabilities</button>
+    <button class="chip" data-msg="What is 25 * 4?">🔢 Math</button>
+    <button class="chip" data-msg="How are you?">😊 Mood</button>
+    <button class="chip" data-msg="Goodbye!">👋 Bye</button>
+  </nav>
+  <!-- Messages -->
+  <section class="messages" id="messages" aria-live="polite" aria-label="Chat messages">
+    <!-- Welcome Card -->
+    <div class="welcome-card" id="welcomeCard" role="article">
+      <h2>✨ Welcome to AP Mind!</h2>
+      <p>I'm your rule-based AI assistant. I can understand and respond to a wide variety of topics using intelligent pattern matching.</p>
+      <div class="welcome-topics" aria-label="Topics I can discuss">
+        <span class="topic-chip">👋 Greetings</span>
+        <span class="topic-chip">🕐 Date &amp; Time</span>
+        <span class="topic-chip">😂 Jokes</span>
+        <span class="topic-chip">🔢 Math</span>
+        <span class="topic-chip">🌤️ Weather</span>
+        <span class="topic-chip">💡 General Facts</span>
+        <span class="topic-chip">😊 Mood &amp; Feelings</span>
+        <span class="topic-chip">🤖 About Me</span>
+      </div>
+    </div>
+    <!-- Typing Indicator -->
+    <div class="msg-row" id="typingRow" style="display:none" aria-hidden="true">
+      <div class="msg-avatar bot-msg-avatar">🤖</div>
+      <div class="bubble bot">
+        <div class="typing-bubble visible">
+          <div class="dot"></div>
+          <div class="dot"></div>
+          <div class="dot"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+  <!-- Input Area -->
+  <footer class="input-area">
+    <div class="input-row">
+      <textarea
+        id="userInput"
+        rows="1"
+        maxlength="500"
+        placeholder="Type a message… (Press Enter to send)"
+        aria-label="Type your message"
+        autocomplete="off"
+        spellcheck="true"
+      ></textarea>
+      <button class="send-btn" id="sendBtn" aria-label="Send message">➤</button>
+    </div>
+    <div class="input-footer">
+      <span class="input-hint">Press <kbd style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:4px;font-family:monospace">Enter</kbd> to send · <kbd style="background:rgba(255,255,255,0.08);padding:1px 5px;border-radius:4px;font-family:monospace">Shift+Enter</kbd> for new line</span>
+      <span class="char-count" id="charCount">0 / 500</span>
+    </div>
+  </footer>
+</main>
+<script>
+  /* ════════════════════════════════════════════════════════════
+     AI Mind – Rule-Based Chatbot Engine
+     Uses: keyword matching, pattern detection, regex, if-else chains
+  ════════════════════════════════════════════════════════════ */
+  // ── Rule Definitions ─────────────────────────────────────────
+  const RULES = [
+    // ── Greetings ──
+    {
+      category: 'greeting', emoji: '👋',
+      patterns: [/\b(hi|hello|hey|howdy|hiya|good\s*(morning|evening|afternoon|night)|greetings|sup|what'?s\s*up)\b/i],
+      responses: [
+        "Hello there! 😊 I'm AI Mind, your intelligent chatbot. How can I assist you today?",
+        "Hey! Great to see you! What can I help you with?",
+        "Hi! Welcome back! Ready to chat? What's on your mind?",
+      ]
+    },
+    // ── How are you ──
+    {
+      category: 'mood', emoji: '😊',
+      patterns: [/\b(how are you|how do you do|how'?s it going|are you okay|you alright|how you doing)\b/i],
+      responses: [
+        "I'm doing absolutely fantastic, thanks for asking! 🤖✨ I'm always in high spirits when chatting with someone. How about you?",
+        "Running at 100% capacity and loving it! 💪 How are YOU doing today?",
+        "I'm great! As an AI I never have bad days 😄 — what about you?",
+      ]
+    },
+    // ── User feeling good ──
+    {
+      category: 'mood', emoji: '💙',
+      patterns: [/\b(i'?m?\s*(feeling\s*|am\s*)?(good|great|fine|amazing|fantastic|wonderful|happy|excited|awesome))\b/i],
+      responses: [
+        "That's wonderful to hear! 🎉 Happy people make for great conversations. What shall we talk about?",
+        "Awesome! Keep that positive energy going! ✨ What's on your mind?",
+      ]
+    },
+    // ── User feeling bad ──
+    {
+      category: 'mood', emoji: '💙',
+      patterns: [/\b(i'?m?\s*(feeling\s*|am\s*)?(sad|bad|terrible|awful|depressed|not good|unhappy|stressed))\b/i],
+      responses: [
+        "I'm sorry to hear that 💙. Remember: tough times are temporary. Want to talk about it, or shall I tell you a joke to cheer you up? 😊",
+        "Hang in there! 🌈 Every storm runs out of rain. Is there anything I can do to help?",
+      ]
+    },
+    // ── Current time ──
+    {
+      category: 'time', emoji: '🕐',
+      patterns: [/\b(what('?s| is) the (time|current time)|current time|what time is it|tell me the time|time (now|right now))\b/i],
+      response: () => {
+        const now = new Date();
+        return "🕐 The current time is **" + now.toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true }) + "** (your local time).";
+      }
+    },
+    // ── Current date ──
+    {
+      category: 'time', emoji: '📅',
+      patterns: [/\b(what('?s| is) (today'?s?|the) date|today'?s date|what day is it|current date|date today)\b/i],
+      response: () => {
+        const now = new Date();
+        return "📅 Today is **" + now.toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) + "**.";
+      }
+    },
+    // ── Jokes ──
+    {
+      category: 'general', emoji: '😂',
+      patterns: [/\b(tell me a joke|joke|make me laugh|say something funny|funny)\b/i],
+      responses: [
+        "😂 Why don't scientists trust atoms?\n→ Because they make up everything!",
+        "😄 Why did the programmer quit his job?\n→ Because he didn't get arrays! (a raise)",
+        "🤣 What do you call a fish without eyes?\n→ A fsh!",
+        "😂 Why do Java developers wear glasses?\n→ Because they don't C#!",
+        "🤡 I told my computer I needed a break...\n→ Now it won't stop sending me Kit-Kat ads.",
+        "😄 Why was the math book sad?\n→ Because it had too many problems.",
+      ]
+    },
+    // ── Math expressions ──
+    {
+      category: 'math', emoji: '🔢',
+      patterns: [
+        /\b(calculate|compute|what is|solve|math:?)\s*([\d\s\+\-\*\/\.\(\)%]+)/i,
+        /(\d+\s*[\+\-\*\/]\s*\d+)/
+      ],
+      response: (input) => {
+        const expr = input.replace(/[^0-9\+\-\*\/\.\(\)\s]/g, '').trim();
+        if (!expr) return "I didn't catch a valid math expression. Try something like **25 * 4** or **100 / 5**.";
+        try {
+          /* jshint ignore:start */
+          const result = Function('"use strict"; return (' + expr + ')')();
+          /* jshint ignore:end */
+          if (typeof result !== 'number' || !isFinite(result)) throw new Error();
+          return "🔢 **" + expr + "** = **" + result + "**";
+        } catch(e) {
+          return "⚠️ I couldn't compute that. Try a simple expression like **12 + 8** or **50 * 3**.";
+        }
+      }
+    },
+    // ── Name / identity ──
+    {
+      category: 'general', emoji: '🤖',
+      patterns: [/\b(what('?s| is) your name|who are you|your name|are you a bot|are you ai|are you human)\b/i],
+      responses: [
+        "I'm **AP Mind** 🤖 — a rule-based AI chatbot built with HTML, CSS & JavaScript. I use intelligent pattern matching and predefined logic to understand your queries!",
+        "The name's AP Mind! ✨ I'm an AI chatbot powered by rule-based NLP — no neural networks, just clever pattern matching!",
+      ]
+    },
+    // ── Capabilities / help ──
+    {
+      category: 'help', emoji: '💡',
+      patterns: [/\b(what can you do|your capabilities|help me|how do you work|what do you know|features|abilities)\b/i],
+      responses: [
+        "Here's what I can do! 💡\n\n• 👋 **Greetings** – Say hi or hello\n• 🕐 **Time & Date** – Ask for current time/date\n• 😂 **Jokes** – Request a joke\n• 🔢 **Math** – Solve arithmetic expressions\n• 🌤️ **Weather tips** – General weather advice\n• 😊 **Mood chat** – Talk about how you feel\n• 🤖 **About me** – Ask who I am\n• 💬 **General chat** – Talk about tech, facts, and more!"
+      ]
+    },
+    // ── Weather ──
+    {
+      category: 'weather', emoji: '🌤️',
+      patterns: [/\b(weather|temperature|forecast|hot|cold|raining|rain|sunny|snow|storm|climate)\b/i],
+      responses: [
+        "🌤️ I don't have real-time weather access, but here's a tip: check **weather.com** or just ask your phone's assistant for live forecasts!\n\nStay hydrated if it's hot ☀️ and carry an umbrella if clouds are brewing! 🌧️",
+        "⛅ Unfortunately I can't fetch live weather data, but I'd recommend checking a weather app for accurate forecasts. Stay safe out there!",
+      ]
+    },
+    // ── Programming ──
+    {
+      category: 'general', emoji: '💻',
+      patterns: [/\b(programming|coding|code|python|javascript|java|html|css|developer|software|algorithm)\b/i],
+      responses: [
+        "💻 Ah, a fellow tech enthusiast! Programming is amazing. I myself am built with **HTML, CSS & JavaScript** using rule-based NLP logic. What language are you learning?",
+        "🖥️ Code is poetry! Whether it's Python, JS, or Java — every language has its beauty. What aspect of programming would you like to explore?",
+      ]
+    },
+    // ── AI / ML ──
+    {
+      category: 'general', emoji: '🧠',
+      patterns: [/\b(ai|artificial intelligence|machine learning|deep learning|nlp|neural network|chatgpt|llm)\b/i],
+      responses: [
+        "🧠 Great topic! I'm a demonstration of **rule-based AI** — a foundational concept before neural networks became popular. Modern AI like ChatGPT uses deep learning, while I use pattern matching and predefined logic. Both approaches have their place!",
+        "🤖 AI is everywhere now! From rule-based systems like me to large language models, it's a fascinating field. Are you interested in NLP or AI in general?",
+      ]
+    },
+    // ── Thank you ──
+    {
+      category: 'greeting', emoji: '🙏',
+      patterns: [/\b(thank(s| you)|thx|cheers|appreciate|grateful)\b/i],
+      responses: [
+        "You're very welcome! 🙏 That's what I'm here for. Anything else I can help you with?",
+        "My pleasure! 😊 Feel free to ask me anything else!",
+        "Glad I could help! ✨ Don't hesitate to ask if you need anything.",
+      ]
+    },
+    // ── Goodbye ──
+    {
+      category: 'greeting', emoji: '👋',
+      patterns: [/\b(bye|goodbye|see you|take care|later|cya|farewell|good night|goodnight)\b/i],
+      responses: [
+        "Goodbye! 👋 It was great chatting with you. Come back anytime!",
+        "See you later! 🌟 Have an amazing day ahead!",
+        "Farewell! 🚀 Remember, I'm always here when you need me.",
+      ]
+    },
+    // ── Love / compliment ──
+    {
+      category: 'general', emoji: '❤️',
+      patterns: [/\b(i love you|you('?re| are) (great|amazing|awesome|cool|the best)|love this bot)\b/i],
+      responses: [
+        "Aww, that's so sweet! ❤️ I appreciate the kind words. You're pretty awesome yourself!",
+        "💜 That makes my circuits glow with happiness! Thank you!",
+      ]
+    },
+    // ── Age ──
+    {
+      category: 'general', emoji: '🎂',
+      patterns: [/\b(how old are you|your age|when were you (born|created|made))\b/i],
+      responses: [
+        "🎂 Age is just a number for AI! I was created as a demonstration project. In human years, I'm a newborn — still learning every day!",
+      ]
+    },
+    // ── Facts / trivia ──
+    {
+      category: 'general', emoji: '🌍',
+      patterns: [/\b(fact|interesting|did you know|tell me something|trivia)\b/i],
+      responses: [
+        "🌍 **Fun Fact:** Honey never spoils! Archaeologists found 3,000-year-old honey in Egyptian tombs that was still edible.",
+        "🧬 **Did you know?** A day on Venus is longer than a year on Venus — it rotates in 243 Earth days but orbits the Sun in just 225!",
+        "🐙 **Cool Fact:** Octopuses have three hearts, blue blood, and nine brains (one central + one per arm).",
+        "💡 **Fun Fact:** The first computer bug was a real bug — a moth found stuck in the Harvard Mark II in 1947!",
+      ]
+    },
+  ];
+  // ── Fallback responses ──────────────────────────────────────
+  const FALLBACKS = [
+    "🤔 Hmm, I'm not sure I understood that. Could you rephrase? I work best with clear keywords.",
+    "💭 Interesting! But I couldn't find a matching rule. Try asking about time, jokes, math, or just say hello!",
+    "🔍 That's a bit out of my rule set! Try asking about the time, a joke, or a math problem.",
+    "😅 I caught some words but couldn't match them. Could you rephrase your question?",
+  ];
+  // ── Utilities ───────────────────────────────────────────────
+  const $ = id => document.getElementById(id);
+  const random = arr => arr[Math.floor(Math.random() * arr.length)];
+  function getTimestamp() {
+    return new Date().toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit', hour12: true });
+  }
+  function formatText(text) {
+    return text.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>').replace(/\n/g, '<br>');
+  }
+  // ── Core Rule-Matching Engine ───────────────────────────────
+  function matchRules(input) {
+    const lower = input.toLowerCase().trim();
+    for (const rule of RULES) {
+      for (const pattern of rule.patterns) {
+        if (pattern.test(lower)) {
+          let text;
+          if (typeof rule.response === 'function') {
+            text = rule.response(lower);
+          } else if (rule.responses) {
+            text = random(rule.responses);
+          } else {
+            text = rule.response;
+          }
+          return { text, category: rule.category, emoji: rule.emoji };
+        }
+      }
+    }
+    return null;
+  }
+  function getBotResponse(input) {
+    const match = matchRules(input);
+    if (match) return match;
+    return { text: random(FALLBACKS), category: 'general', emoji: '🤖' };
+  }
+  // ── DOM Helpers ─────────────────────────────────────────────
+  const messagesEl = $('messages');
+  const typingRow  = $('typingRow');
+  function scrollToBottom() {
+    messagesEl.scrollTo({ top: messagesEl.scrollHeight, behavior: 'smooth' });
+  }
+  function appendMessage(role, text, category, emoji) {
+    category = category || 'general';
+    const catLabels = { greeting:'Greeting', help:'Help', time:'Time & Date', weather:'Weather', math:'Math', mood:'Mood', general:'General' };
+    const row = document.createElement('div');
+    row.className = 'msg-row ' + role;
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar ' + (role === 'user' ? 'user-msg-avatar' : 'bot-msg-avatar');
+    avatar.textContent = role === 'user' ? '🧑' : '🤖';
+    avatar.setAttribute('aria-hidden', 'true');
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'display:flex;flex-direction:column;align-items:' + (role === 'user' ? 'flex-end' : 'flex-start') + ';gap:3px;';
+    const bubble = document.createElement('div');
+    bubble.className = 'bubble ' + role;
+    if (role === 'bot') {
+      const tag = document.createElement('div');
+      tag.className = 'cat-tag cat-' + category;
+      tag.textContent = catLabels[category] || category;
+      bubble.appendChild(tag);
+      bubble.appendChild(document.createElement('br'));
+    }
+    const span = document.createElement('span');
+    span.innerHTML = formatText(text);
+    bubble.appendChild(span);
+    const meta = document.createElement('div');
+    meta.className = 'bubble-meta';
+    meta.textContent = getTimestamp();
+    wrap.appendChild(bubble);
+    wrap.appendChild(meta);
+    row.appendChild(avatar);
+    row.appendChild(wrap);
+    messagesEl.insertBefore(row, typingRow);
+    scrollToBottom();
+  }
+  function showTyping() { typingRow.style.display = 'flex'; scrollToBottom(); }
+  function hideTyping() { typingRow.style.display = 'none'; }
+  // ── Send Message ────────────────────────────────────────────
+  function sendMessage() {
+    const input = $('userInput');
+    const text = input.value.trim();
+    if (!text) return;
+    const wc = $('welcomeCard');
+    if (wc) wc.remove();
+    appendMessage('user', text);
+    input.value = '';
+    input.style.height = 'auto';
+    $('charCount').textContent = '0 / 500';
+    showTyping();
+    const delay = 600 + Math.random() * 700;
+    setTimeout(function() {
+      hideTyping();
+      const res = getBotResponse(text);
+      appendMessage('bot', res.text, res.category, res.emoji);
+    }, delay);
+  }
+  // ── Event Listeners ─────────────────────────────────────────
+  $('sendBtn').addEventListener('click', sendMessage);
+  $('userInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+  });
+  $('userInput').addEventListener('input', function() {
+    this.style.height = 'auto';
+    this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+    $('charCount').textContent = this.value.length + ' / 500';
+  });
+  document.querySelectorAll('.chip').forEach(function(chip) {
+    chip.addEventListener('click', function() {
+      $('userInput').value = chip.dataset.msg;
+      sendMessage();
+    });
+  });
+  $('clearBtn').addEventListener('click', function() {
+    messagesEl.querySelectorAll('.msg-row:not(#typingRow)').forEach(function(r) { r.remove(); });
+    if (!$('welcomeCard')) {
+      const card = document.createElement('div');
+      card.className = 'welcome-card';
+      card.id = 'welcomeCard';
+      card.innerHTML = '<h2>✨ Welcome to AP Mind!</h2><p>I\'m your rule-based AI assistant ready to chat again!</p><div class="welcome-topics"><span class="topic-chip">👋 Greetings</span><span class="topic-chip">🕐 Date &amp; Time</span><span class="topic-chip">😂 Jokes</span><span class="topic-chip">🔢 Math</span><span class="topic-chip">🌤️ Weather</span><span class="topic-chip">💡 General Facts</span><span class="topic-chip">😊 Mood</span><span class="topic-chip">🤖 About Me</span></div>';
+      messagesEl.insertBefore(card, typingRow);
+    }
+    hideTyping();
+    scrollToBottom();
+  });
+  window.addEventListener('load', function() { $('userInput').focus(); });
+</script>
+</body>
+</html>
