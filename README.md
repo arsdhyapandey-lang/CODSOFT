@@ -1,2 +1,2 @@
 # CODSOFT
-for Intership
+for Intership of ai
